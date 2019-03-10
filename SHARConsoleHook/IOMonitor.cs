@@ -193,6 +193,16 @@ namespace SHARConsoleHook
             );
 
         [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
+        static extern IntPtr CreateFile(
+            string lpFileName,
+            uint dwDesiredAccess,
+            uint dwShareMode,
+            IntPtr lpSecurityAttributes,
+            uint dwCreationDeposition,
+            uint dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true, CallingConvention = CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool WriteFile(
             IntPtr hConsoleOutput,
@@ -200,6 +210,9 @@ namespace SHARConsoleHook
             uint nNumberOfCharsToWrite,
             out uint lpNumberofCharsWritten,
             IntPtr lpOverlapped);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall)]
+        static extern uint GetFileType(IntPtr hFile);
 
         bool WriteConsole_Hook(
             IntPtr hConsoleOutput,
@@ -213,8 +226,9 @@ namespace SHARConsoleHook
             // Call original first so we get lpNumberOfBytesWritten
             result = WriteFile(hConsoleOutput, lpBuffer, nNumberOfCharsToWrite, out lpNumberofCharsWritten, lpOverlapped);
 
-            IntPtr hConsole = GetStdHandle(0xFFFFFFF5U);
-            if (hConsole == hConsoleOutput)
+            uint type = GetFileType(hConsoleOutput);
+
+            if (type == 2U)
             {
                 byte[] data = new byte[nNumberOfCharsToWrite];
                 Marshal.Copy(lpBuffer, data, 0, (int)nNumberOfCharsToWrite);
